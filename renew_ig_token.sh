@@ -7,6 +7,11 @@ REFRESH_ENDPOINT=https://graph.instagram.com/refresh_access_token
 TEMP_JAR=$(mktemp)
 TEMP_ENV=$(mktemp)
 
+function cleanup() {
+  rm -f "${TEMP_ENV}" "${TEMP_JAR}"
+}
+trap cleanup EXIT
+
 function send_notification {
   local TAG
   local PRIO
@@ -30,7 +35,11 @@ function send_notification {
 source "${TOKEN_SOURCE}"
 
 # calling token refresh endpoint
-if ! curl -sS --fail "${REFRESH_ENDPOINT}?grant_type=ig_refresh_token&access_token=${INSTAGRAM_ACCESS_TOKEN}" -o "${TEMP_JAR}"
+if ! curl -sS --fail --get \
+          --data-urlencode grant_type=ig_refresh_token \
+          --data-urlencode "access_token=${INSTAGRAM_ACCESS_TOKEN}" \
+          "${REFRESH_ENDPOINT}" \
+          -o "${TEMP_JAR}"
 then
   send_notification "Refresh failed! Next-js is probably still running but the token might expire" "warning"
   exit 1
@@ -52,9 +61,6 @@ EOF
 
 # Copy the new env file to its final path
 cp -b "${TEMP_ENV}" "${TOKEN_SOURCE}"
-
-# clean up 
-rm "${TEMP_ENV}" "${TEMP_JAR}"
 
 # restart nextjs
 if ! supervisorctl restart goldies-next
