@@ -18,7 +18,8 @@ function send_notification {
     TAG="Tags: warning"
     PRIO="Priority: high"
   fi
-  curl -H "$TAG" \
+  curl -sS --fail \
+       -H "$TAG" \
        -H "$PRIO" \
        -H "Title: IG Token Update" \
        -d "${1}" \
@@ -29,7 +30,7 @@ function send_notification {
 source "${TOKEN_SOURCE}"
 
 # calling token refresh endpoint
-if ! curl "${REFRESH_ENDPOINT}?grant_type=ig_refresh_token&access_token=${INSTAGRAM_ACCESS_TOKEN}" -o "${TEMP_JAR}"
+if ! curl -sS --fail "${REFRESH_ENDPOINT}?grant_type=ig_refresh_token&access_token=${INSTAGRAM_ACCESS_TOKEN}" -o "${TEMP_JAR}"
 then
   send_notification "Refresh failed! Next-js is probably still running but the token might expire" "warning"
   exit 1
